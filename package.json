@@ -1,9 +1,9 @@
 {
-  "name": "@apitable/aitable-mcp-server",
-  "version": "1.0.3",
-  "description": "AITable.ai Model Context Protocol Server enables AI agents to connect and work with AITable datasheets.",
+  "name": "@apitable/apitable-mcp-server",
+  "version": "1.0.0",
+  "description": "APITable Model Context Protocol Server enables AI agents to connect and work with APITable datasheets.",
   "keywords": [
-    "AITable",
+    "APITable",
     "MCP",
     "Model Context Protocol",
     "AI agents",
@@ -21,13 +21,7 @@
   "files": [
     "dist"
   ],
-  "author": "AITable.ai",
-  "contributors": [
-    {
-      "name": "Kelvin Poon",
-      "email": "kelvin@aitable.ai"
-    }
-  ],
+  "author": "APITable",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

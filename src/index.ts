@@ -5,7 +5,7 @@ import {
   CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from "zod";
-import { AitableService } from './aitableService.js';
+import { ApitableService } from './apitableService.js';
 import type {
   SpaceVO,
   ResponseVO,
@@ -19,16 +19,16 @@ import type {
 
 // Create an MCP server
 const server = new McpServer({
-  name: "AITable MCP Server",
+  name: "APITable MCP Server",
   version: "1.0.0"
 }, {
-  instructions: "This server provides access to AITable functionalities, allowing you to interact with workspaces, nodes, and records. Use the available tools to list spaces, search nodes, list records, get fields schema, create records, and upload attachments.",
+  instructions: "This server provides access to APITable functionalities, allowing you to interact with workspaces, nodes, and records. Use the available tools to list spaces, search nodes, list records, get fields schema, create records, and upload attachments.",
 });
 
-const apitableApiKey = process.env.AITABLE_API_KEY ?? '';
-const apitableBaseUrl = process.env.AITABLE_BASE_URL ?? "https://aitable.ai/fusion";
+const apitableApiKey = process.env.APITABLE_API_KEY ?? '';
+const apitableBaseUrl = process.env.APITABLE_API_URL ?? "https://apitable.com/fusion/v1";
 
-const aitableService = new AitableService(apitableApiKey, apitableBaseUrl);
+const apitableService = new ApitableService(apitableApiKey, apitableBaseUrl);
 
 const formatToolResponse = (data: unknown, isError = false): CallToolResult => {
   return {
@@ -45,7 +45,7 @@ server.tool("list_spaces",
   "Fetches all workspaces that the currently authenticated user has permission to access.",
   async () => {
     try {
-      const result: ResponseVO<{ spaces: SpaceVO[] }> = await aitableService.fetchFromAPI("/v1/spaces", {
+      const result: ResponseVO<{ spaces: SpaceVO[] }> = await apitableService.fetchFromAPI("/spaces", {
         method: "GET",
       });
 
@@ -80,7 +80,7 @@ server.tool("list_spaces",
 );
 
 server.tool("search_nodes",
-  "Retrieve nodes based on specific types, permissions, and queries. Nodes in AITable can be of several types: datasheets (also known as sheets, or spreadsheets), form, dashboard, and folders.",
+  "Retrieve nodes based on specific types, permissions, and queries. Nodes in APITable can be of several types: datasheets (also known as sheets, or spreadsheets), form, dashboard, and folders.",
   {
     space_id: z.string().describe('The ID of the workspace to fetch nodes from.'),
     node_type: z.string().describe('Filter the node list to only include nodes of the specified type. Common types include: "Datasheet", "Form", "Automation", "Folder", "Mirror"'),
@@ -93,10 +93,10 @@ server.tool("search_nodes",
         throw new Error("space_id and node_type are required.");
       }
 
-      const queryStr = aitableService.buildQueryString({ type: node_type, query });
-      const url = `/v2/spaces/${space_id}/nodes${queryStr}`;
+      const queryStr = apitableService.buildQueryString({ type: node_type, query });
+      const url = `/spaces/${space_id}/nodes${queryStr}`;
 
-      const result: ResponseVO<{ nodes: NodeVO[] }> = await aitableService.fetchFromAPI(url, {
+      const result: ResponseVO<{ nodes: NodeVO[] }> = await apitableService.fetchFromAPI(url, {
         method: "GET",
       });
 
@@ -141,7 +141,7 @@ server.tool("list_records",
     pageSize: z.number().min(1).max(1000).default(20).optional().describe("How many records are returned per page."),
     fields: z.string().optional().describe("The returned record results are limited to the specified fields by name. Multiple fields should be separated by commas without spaces (e.g. 'field1,field2,field3')."),
     viewId: z.string().optional().describe("When the viewId is explicitly specified, all records in the specified view will be returned in turn according to the sorting in the specified view."),
-    filterByFormula: z.string().optional().describe("Filter the records by a formula. The formula should be in the format accepted by AITable, this is useful for filtering records based on specific criteria. e.g. '{field1}=\"value1\"' or 'AND({field1}=\"value1\", {field2}=\"value2\")'."),
+    filterByFormula: z.string().optional().describe("Filter the records by a formula. The formula should be in the format accepted by APITable, this is useful for filtering records based on specific criteria. e.g. '{field1}=\"value1\"' or 'AND({field1}=\"value1\", {field2}=\"value2\")'."),
   },
   async ({ node_id, sort, pageNum, pageSize, fields, viewId }) => {
     try {
@@ -149,14 +149,14 @@ server.tool("list_records",
         throw new Error("datasheet ID is required.");
       }
 
-      const queryStr = aitableService.buildQueryString({
+      const queryStr = apitableService.buildQueryString({
         sort, pageNum, pageSize, fields, viewId,
         cellFormat: "string",
         fieldKey: "name",
       });
-      const endpoint = `/v1/datasheets/${node_id}/records${queryStr}`;
+      const endpoint = `/datasheets/${node_id}/records${queryStr}`;
 
-      const result: ResponseVO<GetRecordsResponeDataVO> = await aitableService.fetchFromAPI(endpoint, {
+      const result: ResponseVO<GetRecordsResponeDataVO> = await apitableService.fetchFromAPI(endpoint, {
         method: "GET",
       });
 
@@ -189,13 +189,13 @@ server.tool("get_fields_schema",
       if (!node_id) {
         throw new Error("The datasheet ID (node_id) is required.");
       }
-      const result = await aitableService.getDatasheetFieldsSchema(node_id);
+      const result = await apitableService.getDatasheetFieldsSchema(node_id);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to fetch datasheet fields schema");
       }
 
-      const fieldsSchema: FieldFormatJSONSchema = aitableService.getFieldsJSONSchema(result.data.fields);
+      const fieldsSchema: FieldFormatJSONSchema = apitableService.getFieldsJSONSchema(result.data.fields);
 
       return formatToolResponse({
         success: true,
@@ -238,7 +238,7 @@ server.tool("create_record",
       }
 
 
-      const getFieldsResult = await aitableService.getDatasheetFieldsSchema(node_id);
+      const getFieldsResult = await apitableService.getDatasheetFieldsSchema(node_id);
 
       if (!getFieldsResult.success) {
         throw new Error(getFieldsResult.message || "Failed to fetch datasheet fields schema");
@@ -247,7 +247,7 @@ server.tool("create_record",
       const fieldsSchema = getFieldsResult.data.fields;
       let cells: Record<string, any> = {};
       if (fields !== undefined) {
-        cells = aitableService.convertFieldValuesToCellFormat(fieldsSchema, fields);
+        cells = apitableService.convertFieldValuesToCellFormat(fieldsSchema, fields);
       }
 
       if (attachments_fields) {
@@ -261,7 +261,7 @@ server.tool("create_record",
         });
       }
 
-      const createRecordResult = await aitableService.createDatasheetRecord(node_id, cells);
+      const createRecordResult = await apitableService.createDatasheetRecord(node_id, cells);
 
       if (!createRecordResult.success) {
         throw new Error(createRecordResult.message || "Failed to create record");
@@ -285,7 +285,7 @@ server.tool("create_record",
 );
 
 server.tool("upload_attachment_via_url",
-  "Upload an attachment to the AITable server using its web URL. Returns storage information that can be passed to create_record or update_record tools to associate with a specific records.",
+  "Upload an attachment to the APITable server using its web URL. Returns storage information that can be passed to create_record or update_record tools to associate with a specific records.",
   {
     node_id: z.string().describe('The ID of the datasheet where the attachment will be attached after upload.'),
     attachment_url: z.string().describe('The complete web URL of the file to be uploaded.'),
@@ -301,7 +301,7 @@ server.tool("upload_attachment_via_url",
         throw new Error("The attachment URL is required.");
       }
 
-      const result: ResponseVO<attachmentVO[]> = await aitableService.uploadFileToSpace(node_id, attachment_url, attachment_name);
+      const result: ResponseVO<attachmentVO[]> = await apitableService.uploadFileToSpace(node_id, attachment_url, attachment_name);
 
       if (!result.success) {
         throw new Error(result.message || "Failed to upload attachment");
@@ -326,7 +326,7 @@ server.tool("upload_attachment_via_url",
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Bika MCP Server running on stdio");
+  console.error("APITable MCP Server running on stdio");
 }
 
 main().catch((error) => {

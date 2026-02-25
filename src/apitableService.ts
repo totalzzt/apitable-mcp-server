@@ -8,7 +8,7 @@ import type {
   SelectFieldOptionVO,
 } from "./types.js";
 
-export class AitableService {
+export class ApitableService {
   private readonly apiKey: string;
 
   private readonly baseUrl: string;
@@ -21,7 +21,7 @@ export class AitableService {
     fetch: typeof nodeFetch = nodeFetch
   ) {
     if (!apiKey) {
-      console.log("Please set the AITABLE_API_KEY environment variable.");
+      console.log("Please set the APITABLE_API_KEY environment variable.");
     }
 
     this.apiKey = apiKey;
@@ -47,7 +47,7 @@ export class AitableService {
 
     if (!response.ok) {
       throw new Error(
-        `AITable API Error: ${response.statusText}. Response: ${responseJson.message}`
+        `APITable API Error: ${response.statusText}. Response: ${responseJson.message}`
       );
     }
 
@@ -357,7 +357,7 @@ export class AitableService {
 
     if (!response.ok) {
       throw new Error(
-        `AITable API Error: ${response.statusText}. Response: ${responseJson.message}`
+        `APITable API Error: ${response.statusText}. Response: ${responseJson.message}`
       );
     }
 
